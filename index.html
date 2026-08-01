@@ -1,4 +1,4 @@
-html_content = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -10,6 +10,7 @@ html_content = """<!DOCTYPE html>
             margin: 0;
             padding: 0;
             user-select: none;
+            -webkit-touch-callout: none; /* Desactiva menú contextual en móviles */
         }
         body, html {
             width: 100%;
@@ -91,7 +92,7 @@ html_content = """<!DOCTYPE html>
             transform: translateY(-2px);
         }
         .img-box {
-            max-width: 350px;
+            max-width: 90%;
             max-height: 300px;
             object-fit: contain;
             margin: 20px 0;
@@ -119,6 +120,8 @@ html_content = """<!DOCTYPE html>
         .seed-card {
             width: 240px;
             height: 320px;
+            max-width: 80%;
+            max-height: 60%;
             cursor: pointer;
             box-shadow: 0 8px 16px rgba(0,0,0,0.2);
             border-radius: 12px;
@@ -181,12 +184,12 @@ html_content = """<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- Screen 5: Planta Creciendo -->
+    <!-- Screen 5: Planta Creciendo (Papa Mina Interactiva) -->
     <div id="screen5" class="screen" style="background-color: white;">
         <canvas id="plantCanvas"></canvas>
         <div id="plantUI" class="content-layer">
             <img id="seedCard" src="contents/PotatoMineSeedPacket.webp" class="seed-card" onclick="startPlantAnimation()" onerror="this.style.display='none'">
-            <div id="clickHint" class="click-hint">✨ Haz clic en la carta para plantarla ✨</div>
+            <div id="clickHint" class="click-hint">✨ Toca la carta para plantarla ✨</div>
         </div>
     </div>
 
@@ -230,16 +233,16 @@ html_content = """<!DOCTYPE html>
     const heartsCanvas = document.getElementById('heartsCanvas');
     const hCtx = heartsCanvas.getContext('2d');
 
-    function resizeCanvas() {
+    function resizeHeartsCanvas() {
         heartsCanvas.width = heartsCanvas.parentElement.clientWidth;
         heartsCanvas.height = heartsCanvas.parentElement.clientHeight;
     }
 
     function startHeartsAnimation() {
-        resizeCanvas();
+        resizeHeartsCanvas();
         hearts = [];
         if (heartsInterval) clearInterval(heartsInterval);
-        heartsInterval = setInterval(updateHearts, 30);
+        heartsInterval = setInterval(updateHearts, 30); // 30ms = suave
     }
 
     function stopHeartsAnimation() {
@@ -249,16 +252,18 @@ html_content = """<!DOCTYPE html>
     function updateHearts() {
         hCtx.clearRect(0, 0, heartsCanvas.width, heartsCanvas.height);
         
-        if (Math.random() < 0.2) {
+        // Generar nuevos corazones
+        if (Math.random() < 0.15) { // Reducida frecuencia
             hearts.push({
                 x: Math.random() * heartsCanvas.width,
                 y: -20,
-                size: Math.floor(Math.random() * 45) + 15,
+                size: Math.floor(Math.random() * 40) + 15,
                 color: colors[Math.floor(Math.random() * colors.length)],
-                speed: Math.floor(Math.random() * 4) + 2
+                speed: Math.floor(Math.random() * 3) + 2 // Más lentos
             });
         }
 
+        // Dibujar y mover corazones existentes
         for (let i = hearts.length - 1; i >= 0; i--) {
             let h = hearts[i];
             h.y += h.speed;
@@ -269,12 +274,12 @@ html_content = """<!DOCTYPE html>
             hCtx.fillText("❤", h.x, h.y);
 
             if (h.y > heartsCanvas.height + 20) {
-                hearts.splice(i, 1);
+                hearts.splice(i, 1); // Eliminar si salen de pantalla
             }
         }
     }
 
-    /* --- ANIMACIÓN PLANTA / PAPAMINA (PANTALLA 5) --- */
+    /* --- ANIMACIÓN PLANTA / PAPAMINA (PANTALLA 5) - AHORA LENTA --- */
     const plantCanvas = document.getElementById('plantCanvas');
     const pCtx = plantCanvas.getContext('2d');
     let plantAnimId = null;
@@ -288,6 +293,8 @@ html_content = """<!DOCTYPE html>
     function startPlantAnimation() {
         document.getElementById('seedCard').style.display = 'none';
         document.getElementById('clickHint').style.display = 'none';
+
+        if (plantAnimId) cancelAnimationFrame(plantAnimId);
 
         let x = plantCanvas.width / 2;
         let suelo = plantCanvas.height * 0.75;
@@ -313,14 +320,24 @@ html_content = """<!DOCTYPE html>
 
             if (fase === "creciendo") {
                 if (progreso < 1.0) {
-                    progreso += 0.03;
+                    progreso += 0.015; // Velocidad de crecimiento reducida a la mitad
                 } else {
                     fase = "emergida";
+                    progreso = 1.0;
                 }
             } else if (fase === "emergida") {
-                luzEncendida = (relojAnimacion % 12) < 6;
-                ojosCerrados = Math.random() > 0.96;
-                let offsetIdle = Math.sin(relojAnimacion * 0.15) * 0.015;
+                // --- Lógica del Parpadeo Lento ---
+                // Cada 'relojAnimacion' aumenta en 1 cada frame (~60 veces por segundo).
+                // Para que parpadee lento, usamos números grandes en el residuo (%).
+
+                // Luz Roja Lenta: Encendida 30 frames, apagada 30 frames (suave)
+                luzEncendida = (relojAnimacion % 60) < 30;
+
+                // Ojos Lentos: Parpadean suavemente de vez en cuando (más raro)
+                ojosCerrados = (relojAnimacion % 250) < 10; // Cierra ojos 10 frames cada 250 frames
+
+                // Movimiento 'idle' suave (respiración)
+                let offsetIdle = Math.sin(relojAnimacion * 0.05) * 0.01; 
                 progreso = 1.0 + offsetIdle;
                 lista = true;
 
@@ -345,26 +362,33 @@ html_content = """<!DOCTYPE html>
     }
 
     function drawPlant(x, suelo, prog, luzEncendida, ojosCerrados, lista) {
-        let alturaPapa = 30 + (110 * prog);
+        // Escalar elementos para pantallas pequeñas
+        let escala = 1.0;
+        if (plantCanvas.width < 500) {
+            escala = plantCanvas.width / 500;
+        }
+
+        let alturaPapa = (30 + (110 * prog)) * escala;
         let yTopPapa = suelo - alturaPapa;
 
         // 1. Antena (Tallo + Bola)
         if (prog > 0.4) {
             let progAntena = Math.min(1.0, (prog - 0.4) / 0.6);
-            let hTallo = 70 * progAntena;
-            let yBaseTallo = yTopPapa + 15;
+            let hTallo = 70 * progAntena * escala;
+            let yBaseTallo = yTopPapa + (15 * escala);
             let yTopTallo = yBaseTallo - hTallo;
 
             pCtx.fillStyle = "#666666";
             pCtx.strokeStyle = "black";
-            pCtx.lineWidth = 4;
-            pCtx.fillRect(x - 14, yTopTallo, 28, hTallo);
-            pCtx.strokeRect(x - 14, yTopTallo, 28, hTallo);
+            pCtx.lineWidth = 4 * escala;
+            pCtx.fillRect(x - (14 * escala), yTopTallo, 28 * escala, hTallo);
+            pCtx.strokeRect(x - (14 * escala), yTopTallo, 28 * escala, hTallo);
 
+            // Bola de antena (luz roja suave)
             let colorBola = lista ? (luzEncendida ? "#e60000" : "#8b0000") : "#cc0000";
-            let rBola = 48 * progAntena;
+            let rBola = 48 * progAntena * escala;
 
-            if (rBola > 5) {
+            if (rBola > 3) {
                 pCtx.beginPath();
                 pCtx.arc(x, yTopTallo - rBola, rBola, 0, Math.PI * 2);
                 pCtx.fillStyle = colorBola;
@@ -382,77 +406,85 @@ html_content = """<!DOCTYPE html>
 
         // 2. Papa (Cuerpo)
         pCtx.beginPath();
-        pCtx.ellipse(x, (yTopPapa + suelo + 40) / 2, 150, (suelo + 40 - yTopPapa) / 2, 0, 0, Math.PI * 2);
+        let radioX_Papa = 150 * escala;
+        let radioY_Papa = (suelo + (40 * escala) - yTopPapa) / 2;
+        let yCentroPapa = (yTopPapa + suelo + (40 * escala)) / 2;
+        pCtx.ellipse(x, yCentroPapa, radioX_Papa, radioY_Papa, 0, 0, Math.PI * 2);
         pCtx.fillStyle = "#d3bf98";
         pCtx.fill();
-        pCtx.lineWidth = 5;
+        pCtx.lineWidth = 5 * escala;
         pCtx.strokeStyle = "black";
         pCtx.stroke();
 
-        // Muescas
+        // Muescas de la papa
         if (prog > 0.3) {
             pCtx.beginPath();
-            pCtx.ellipse(x - 80, yTopPapa + 39, 10, 9, 0, 0, Math.PI * 2);
+            pCtx.ellipse(x - (80 * escala), yTopPapa + (39 * escala), 10 * escala, 9 * escala, 0, 0, Math.PI * 2);
             pCtx.fillStyle = "#bda780";
             pCtx.fill();
 
             pCtx.beginPath();
-            pCtx.ellipse(x - 5, yTopPapa + 26, 15, 6, 0, 0, Math.PI * 2);
+            pCtx.ellipse(x - (5 * escala), yTopPapa + (26 * escala), 15 * escala, 6 * escala, 0, 0, Math.PI * 2);
             pCtx.fill();
         }
 
-        // 3. Ojos
-        let yOjos = yTopPapa + (alturaPapa * 0.45);
+        // 3. Ojos (Parpadeo Lento)
+        let yOjos = yTopPapa + (radioY_Papa * 0.9);
 
         if (ojosCerrados) {
+            // Dibujar ojos cerrados (líneas suaves)
             pCtx.beginPath();
-            pCtx.moveTo(x - 65, yOjos);
-            pCtx.lineTo(x - 25, yOjos);
-            pCtx.moveTo(x + 25, yOjos);
-            pCtx.lineTo(x + 65, yOjos);
-            pCtx.lineWidth = 5;
+            pCtx.moveTo(x - (65 * escala), yOjos);
+            pCtx.lineTo(x - (25 * escala), yOjos);
+            pCtx.moveTo(x + (25 * escala), yOjos);
+            pCtx.lineTo(x + (65 * escala), yOjos);
+            pCtx.lineWidth = 5 * escala;
             pCtx.strokeStyle = "black";
             pCtx.stroke();
         } else {
+            // Ojos abiertos (suaves y redondos)
+            let rOjoX = 22.5 * escala;
+            let rOjoY = 25 * escala;
+
             // Ojo izq
             pCtx.beginPath();
-            pCtx.ellipse(x - 47.5, yOjos, 22.5, 25, 0, 0, Math.PI * 2);
+            pCtx.ellipse(x - (47.5 * escala), yOjos, rOjoX, rOjoY, 0, 0, Math.PI * 2);
             pCtx.fillStyle = "black";
             pCtx.fill();
             // Brillo izq
             pCtx.beginPath();
-            pCtx.ellipse(x - 45, yOjos - 11, 7, 7, 0, 0, Math.PI * 2);
+            pCtx.ellipse(x - (45 * escala), yOjos - (11 * escala), 7 * escala, 7 * escala, 0, 0, Math.PI * 2);
             pCtx.fillStyle = "white";
             pCtx.fill();
 
             // Ojo der
             pCtx.beginPath();
-            pCtx.ellipse(x + 42.5, yOjos, 22.5, 25, 0, 0, Math.PI * 2);
+            pCtx.ellipse(x + (42.5 * escala), yOjos, rOjoX, rOjoY, 0, 0, Math.PI * 2);
             pCtx.fillStyle = "black";
             pCtx.fill();
             // Brillo der
             pCtx.beginPath();
-            pCtx.ellipse(x + 45, yOjos - 11, 7, 7, 0, 0, Math.PI * 2);
+            pCtx.ellipse(x + (45 * escala), yOjos - (11 * escala), 7 * escala, 7 * escala, 0, 0, Math.PI * 2);
             pCtx.fillStyle = "white";
             pCtx.fill();
         }
 
-        // 4. Boca y Diente
-        let yBoca = yOjos + 15;
+        // 4. Boca y Diente suave
+        let yBoca = yOjos + (15 * escala);
         pCtx.beginPath();
-        pCtx.arc(x, yBoca + 10, 40, Math.PI * 0.15, Math.PI * 0.85);
-        pCtx.lineWidth = 5;
+        pCtx.arc(x, yBoca + (10 * escala), 40 * escala, Math.PI * 0.15, Math.PI * 0.85);
+        pCtx.lineWidth = 5 * escala;
         pCtx.strokeStyle = "black";
         pCtx.stroke();
 
         if (prog > 0.5) {
             pCtx.fillStyle = "white";
-            pCtx.fillRect(x + 8, yBoca + 30, 14, 12);
-            pCtx.lineWidth = 2;
-            pCtx.strokeRect(x + 8, yBoca + 30, 14, 12);
+            pCtx.fillRect(x + (8 * escala), yBoca + (30 * escala), 14 * escala, 12 * escala);
+            pCtx.lineWidth = 2 * escala;
+            pCtx.strokeRect(x + (8 * escala), yBoca + (30 * escala), 14 * escala, 12 * escala);
         }
 
-        // 5. Piedras
+        // 5. Piedras alrededor (Suelo suave)
         const posicionesPiedras = [
             [-145, 0, 24], [-115, 8, 26], [-80, 14, 28], [-40, 18, 30],
             [0, 20, 31], [40, 18, 30], [80, 14, 28], [115, 8, 26], [145, 0, 24]
@@ -460,17 +492,18 @@ html_content = """<!DOCTYPE html>
 
         for (let p of posicionesPiedras) {
             pCtx.beginPath();
-            pCtx.arc(x + p[0], suelo + p[1] + 10, p[2], 0, Math.PI * 2);
-            pCtx.fillStyle = "#6e472b";
+            pCtx.arc(x + (p[0] * escala), suelo + ((p[1] + 10) * escala), p[2] * escala, 0, Math.PI * 2);
+            pCtx.fillStyle = "#6e472b"; // Color tierra
             pCtx.fill();
-            pCtx.lineWidth = 2;
+            pCtx.lineWidth = 2 * escala;
             pCtx.strokeStyle = "black";
             pCtx.stroke();
         }
     }
 
+    // Redimensionar Canvas automáticamente
     window.addEventListener('resize', () => {
-        resizeCanvas();
+        resizeHeartsCanvas();
         if (document.getElementById('screen5').classList.contains('active')) {
             initPlantScreen();
         }
@@ -479,9 +512,3 @@ html_content = """<!DOCTYPE html>
 
 </body>
 </html>
-"""
-
-with open("index.html", "w", encoding="utf-8") as f:
-    f.write(html_content)
-
-print("HTML generado exitosamente")
