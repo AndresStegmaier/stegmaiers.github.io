@@ -1,0 +1,487 @@
+html_content = """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Mi Amor ❤️</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: #fcf8f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            height: 100vh;
+            max-height: 800px;
+            position: relative;
+            background-color: #ffffff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 20px;
+            text-align: center;
+            z-index: 2;
+        }
+        .screen.active {
+            display: flex;
+        }
+        h1, h2, p {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .title-blue {
+            color: blue;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .title-bold {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .text-msg {
+            font-size: 22px;
+            line-height: 1.5;
+        }
+        .text-counter {
+            font-size: 20px;
+            font-weight: bold;
+            color: #d32f2f;
+            line-height: 1.6;
+        }
+        .btn {
+            background-color: #e0e0e0;
+            border: 1px solid #999;
+            padding: 12px 36px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-top: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background-color: #d0d0d0;
+            transform: translateY(-2px);
+        }
+        .img-box {
+            max-width: 350px;
+            max-height: 300px;
+            object-fit: contain;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        /* Canvas for floating hearts and potato animation */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        .content-layer {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .seed-card {
+            width: 240px;
+            height: 320px;
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            transition: transform 0.3s;
+        }
+        .seed-card:hover {
+            transform: scale(1.05);
+        }
+        .click-hint {
+            font-size: 22px;
+            font-weight: bold;
+            color: #444;
+            margin-top: 25px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Screen 1: Pregunta Inicial -->
+    <div id="screen1" class="screen active">
+        <div class="title-blue">¿Quieres ver la sorpresa?</div>
+        <img src="contents/gatopregunta.jpg" class="img-box" alt="Gato pregunta" onerror="this.style.display='none'">
+        <button class="btn" onclick="goToScreen(2)">Si</button>
+    </div>
+
+    <!-- Screen 2: ¿Segura? -->
+    <div id="screen2" class="screen">
+        <div class="title-bold">¿SEGURA?</div>
+        <button class="btn" onclick="goToScreen(3)">Si</button>
+    </div>
+
+    <!-- Screen 3: Gato Amor -->
+    <div id="screen3" class="screen">
+        <div class="text-msg">¡Te amo muchísimo! ❤️<br>Gracias por hacer mi vida más feliz.</div>
+        <img src="contents/gatoamor.png" class="img-box" alt="Gato amor" onerror="this.style.display='none'">
+        <button class="btn" onclick="goToScreen(4)">Continuar</button>
+    </div>
+
+    <!-- Screen 4: Polillas & Corazones Cayendo -->
+    <div id="screen4" class="screen">
+        <canvas id="heartsCanvas"></canvas>
+        <div class="content-layer">
+            <div class="text-msg" style="margin-top: 20px;">
+                Feliz Día a la polola mas linda y hermosa de todo el mundo ❤️<br>
+                Gracias por acompañarme y por ser un gran apoyo, te amo mucho muchisimo y quiero que sepas<br>
+                que no hay día en el que no de gracias por tenerte a mi lado.
+            </div>
+            <img src="contents/polillas.jpg" class="img-box" alt="Polillas" onerror="this.style.display='none'">
+            <div id="counterText" class="text-counter"></div>
+            <div class="title-bold" style="margin-top: 15px;">TE AMO</div>
+            <button class="btn" onclick="goToScreen(5)">Continuar</button>
+        </div>
+    </div>
+
+    <!-- Screen 5: Planta Creciendo -->
+    <div id="screen5" class="screen" style="background-color: white;">
+        <canvas id="plantCanvas"></canvas>
+        <div id="plantUI" class="content-layer">
+            <img id="seedCard" src="contents/PotatoMineSeedPacket.webp" class="seed-card" onclick="startPlantAnimation()" onerror="this.style.display='none'">
+            <div id="clickHint" class="click-hint">✨ Haz clic en la carta para plantarla ✨</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function goToScreen(screenNum) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen' + screenNum).classList.add('active');
+
+        if (screenNum === 4) {
+            updateCounter();
+            startHeartsAnimation();
+        } else {
+            stopHeartsAnimation();
+        }
+
+        if (screenNum === 5) {
+            initPlantScreen();
+        }
+    }
+
+    /* --- CONTADOR DINÁMICO --- */
+    function updateCounter() {
+        const inicio = new Date(2026, 4, 27); // Mayo es mes 4 en JS (0-indexed)
+        const ahora = new Date();
+        const diffMS = ahora - inicio;
+
+        const diffDays = Math.floor(diffMS / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor((diffMS / (1000 * 60 * 60)) % 24);
+        const diffMinutes = Math.floor((diffMS / (1000 * 60)) % 60);
+
+        document.getElementById('counterText').innerHTML = 
+            `Llevamos juntos:<br>❤️ ${diffDays} días, ${diffHours} horas y ${diffMinutes} minutos ❤️`;
+    }
+
+    /* --- ANIMACIÓN DE CORAZONES (PANTALLA 4) --- */
+    let heartsInterval = null;
+    let hearts = [];
+    const colors = ["red", "pink", "hotpink", "purple"];
+    const heartsCanvas = document.getElementById('heartsCanvas');
+    const hCtx = heartsCanvas.getContext('2d');
+
+    function resizeCanvas() {
+        heartsCanvas.width = heartsCanvas.parentElement.clientWidth;
+        heartsCanvas.height = heartsCanvas.parentElement.clientHeight;
+    }
+
+    function startHeartsAnimation() {
+        resizeCanvas();
+        hearts = [];
+        if (heartsInterval) clearInterval(heartsInterval);
+        heartsInterval = setInterval(updateHearts, 30);
+    }
+
+    function stopHeartsAnimation() {
+        if (heartsInterval) clearInterval(heartsInterval);
+    }
+
+    function updateHearts() {
+        hCtx.clearRect(0, 0, heartsCanvas.width, heartsCanvas.height);
+        
+        if (Math.random() < 0.2) {
+            hearts.push({
+                x: Math.random() * heartsCanvas.width,
+                y: -20,
+                size: Math.floor(Math.random() * 45) + 15,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speed: Math.floor(Math.random() * 4) + 2
+            });
+        }
+
+        for (let i = hearts.length - 1; i >= 0; i--) {
+            let h = hearts[i];
+            h.y += h.speed;
+
+            hCtx.font = `${h.size}px Arial`;
+            hCtx.fillStyle = h.color;
+            hCtx.textAlign = 'center';
+            hCtx.fillText("❤", h.x, h.y);
+
+            if (h.y > heartsCanvas.height + 20) {
+                hearts.splice(i, 1);
+            }
+        }
+    }
+
+    /* --- ANIMACIÓN PLANTA / PAPAMINA (PANTALLA 5) --- */
+    const plantCanvas = document.getElementById('plantCanvas');
+    const pCtx = plantCanvas.getContext('2d');
+    let plantAnimId = null;
+
+    function initPlantScreen() {
+        plantCanvas.width = plantCanvas.parentElement.clientWidth;
+        plantCanvas.height = plantCanvas.parentElement.clientHeight;
+        pCtx.clearRect(0, 0, plantCanvas.width, plantCanvas.height);
+    }
+
+    function startPlantAnimation() {
+        document.getElementById('seedCard').style.display = 'none';
+        document.getElementById('clickHint').style.display = 'none';
+
+        let x = plantCanvas.width / 2;
+        let suelo = plantCanvas.height * 0.75;
+
+        let progreso = 0.0;
+        let fase = "creciendo";
+        let relojAnimacion = 0;
+        let terminada = false;
+
+        function renderFrame() {
+            relojAnimacion++;
+            pCtx.clearRect(0, 0, plantCanvas.width, plantCanvas.height);
+
+            // Texto Superior
+            pCtx.fillStyle = "black";
+            pCtx.font = "bold 24px Arial";
+            pCtx.textAlign = "center";
+            pCtx.fillText("Nuestro amor sigue creciendo...", x, 80);
+
+            let luzEncendida = false;
+            let ojosCerrados = false;
+            let lista = false;
+
+            if (fase === "creciendo") {
+                if (progreso < 1.0) {
+                    progreso += 0.03;
+                } else {
+                    fase = "emergida";
+                }
+            } else if (fase === "emergida") {
+                luzEncendida = (relojAnimacion % 12) < 6;
+                ojosCerrados = Math.random() > 0.96;
+                let offsetIdle = Math.sin(relojAnimacion * 0.15) * 0.015;
+                progreso = 1.0 + offsetIdle;
+                lista = true;
+
+                if (!terminada) {
+                    terminada = true;
+                }
+            }
+
+            if (terminada) {
+                pCtx.fillStyle = "black";
+                pCtx.font = "bold 22px Arial";
+                pCtx.textAlign = "center";
+                pCtx.fillText("Como esta plantita,", x, suelo + 90);
+                pCtx.fillText("quiero seguir creciendo contigo ❤️", x, suelo + 120);
+            }
+
+            drawPlant(x, suelo, progreso, luzEncendida, ojosCerrados, lista);
+            plantAnimId = requestAnimationFrame(renderFrame);
+        }
+
+        renderFrame();
+    }
+
+    function drawPlant(x, suelo, prog, luzEncendida, ojosCerrados, lista) {
+        let alturaPapa = 30 + (110 * prog);
+        let yTopPapa = suelo - alturaPapa;
+
+        // 1. Antena (Tallo + Bola)
+        if (prog > 0.4) {
+            let progAntena = Math.min(1.0, (prog - 0.4) / 0.6);
+            let hTallo = 70 * progAntena;
+            let yBaseTallo = yTopPapa + 15;
+            let yTopTallo = yBaseTallo - hTallo;
+
+            pCtx.fillStyle = "#666666";
+            pCtx.strokeStyle = "black";
+            pCtx.lineWidth = 4;
+            pCtx.fillRect(x - 14, yTopTallo, 28, hTallo);
+            pCtx.strokeRect(x - 14, yTopTallo, 28, hTallo);
+
+            let colorBola = lista ? (luzEncendida ? "#e60000" : "#8b0000") : "#cc0000";
+            let rBola = 48 * progAntena;
+
+            if (rBola > 5) {
+                pCtx.beginPath();
+                pCtx.arc(x, yTopTallo - rBola, rBola, 0, Math.PI * 2);
+                pCtx.fillStyle = colorBola;
+                pCtx.fill();
+                pCtx.stroke();
+
+                if (lista && luzEncendida) {
+                    pCtx.beginPath();
+                    pCtx.arc(x - (rBola * 0.35), yTopTallo - (rBola * 1.35), rBola * 0.25, 0, Math.PI * 2);
+                    pCtx.fillStyle = "white";
+                    pCtx.fill();
+                }
+            }
+        }
+
+        // 2. Papa (Cuerpo)
+        pCtx.beginPath();
+        pCtx.ellipse(x, (yTopPapa + suelo + 40) / 2, 150, (suelo + 40 - yTopPapa) / 2, 0, 0, Math.PI * 2);
+        pCtx.fillStyle = "#d3bf98";
+        pCtx.fill();
+        pCtx.lineWidth = 5;
+        pCtx.strokeStyle = "black";
+        pCtx.stroke();
+
+        // Muescas
+        if (prog > 0.3) {
+            pCtx.beginPath();
+            pCtx.ellipse(x - 80, yTopPapa + 39, 10, 9, 0, 0, Math.PI * 2);
+            pCtx.fillStyle = "#bda780";
+            pCtx.fill();
+
+            pCtx.beginPath();
+            pCtx.ellipse(x - 5, yTopPapa + 26, 15, 6, 0, 0, Math.PI * 2);
+            pCtx.fill();
+        }
+
+        // 3. Ojos
+        let yOjos = yTopPapa + (alturaPapa * 0.45);
+
+        if (ojosCerrados) {
+            pCtx.beginPath();
+            pCtx.moveTo(x - 65, yOjos);
+            pCtx.lineTo(x - 25, yOjos);
+            pCtx.moveTo(x + 25, yOjos);
+            pCtx.lineTo(x + 65, yOjos);
+            pCtx.lineWidth = 5;
+            pCtx.strokeStyle = "black";
+            pCtx.stroke();
+        } else {
+            // Ojo izq
+            pCtx.beginPath();
+            pCtx.ellipse(x - 47.5, yOjos, 22.5, 25, 0, 0, Math.PI * 2);
+            pCtx.fillStyle = "black";
+            pCtx.fill();
+            // Brillo izq
+            pCtx.beginPath();
+            pCtx.ellipse(x - 45, yOjos - 11, 7, 7, 0, 0, Math.PI * 2);
+            pCtx.fillStyle = "white";
+            pCtx.fill();
+
+            // Ojo der
+            pCtx.beginPath();
+            pCtx.ellipse(x + 42.5, yOjos, 22.5, 25, 0, 0, Math.PI * 2);
+            pCtx.fillStyle = "black";
+            pCtx.fill();
+            // Brillo der
+            pCtx.beginPath();
+            pCtx.ellipse(x + 45, yOjos - 11, 7, 7, 0, 0, Math.PI * 2);
+            pCtx.fillStyle = "white";
+            pCtx.fill();
+        }
+
+        // 4. Boca y Diente
+        let yBoca = yOjos + 15;
+        pCtx.beginPath();
+        pCtx.arc(x, yBoca + 10, 40, Math.PI * 0.15, Math.PI * 0.85);
+        pCtx.lineWidth = 5;
+        pCtx.strokeStyle = "black";
+        pCtx.stroke();
+
+        if (prog > 0.5) {
+            pCtx.fillStyle = "white";
+            pCtx.fillRect(x + 8, yBoca + 30, 14, 12);
+            pCtx.lineWidth = 2;
+            pCtx.strokeRect(x + 8, yBoca + 30, 14, 12);
+        }
+
+        // 5. Piedras
+        const posicionesPiedras = [
+            [-145, 0, 24], [-115, 8, 26], [-80, 14, 28], [-40, 18, 30],
+            [0, 20, 31], [40, 18, 30], [80, 14, 28], [115, 8, 26], [145, 0, 24]
+        ];
+
+        for (let p of posicionesPiedras) {
+            pCtx.beginPath();
+            pCtx.arc(x + p[0], suelo + p[1] + 10, p[2], 0, Math.PI * 2);
+            pCtx.fillStyle = "#6e472b";
+            pCtx.fill();
+            pCtx.lineWidth = 2;
+            pCtx.strokeStyle = "black";
+            pCtx.stroke();
+        }
+    }
+
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        if (document.getElementById('screen5').classList.contains('active')) {
+            initPlantScreen();
+        }
+    });
+</script>
+
+</body>
+</html>
+"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print("HTML generado exitosamente")
