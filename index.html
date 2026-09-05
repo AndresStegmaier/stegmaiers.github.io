@@ -289,6 +289,13 @@
                 width: 130px;
                 font-size: 13px;
             }
+            .autor {
+                margin-top: 18px;
+                text-align: center;
+                color: #94A3B8;
+                font-size: 14px;
+                line-height: 1.6;
+            }
         }
 
     </style>
@@ -1167,15 +1174,19 @@ Estos procesos permiten obtener energía celular.
 
 
         const mensaje = document.createElement("div");
-
         mensaje.className = "mensaje";
-
-        mensaje.innerHTML =
-            "Tu progreso se guarda automáticamente.";
-
+        mensaje.innerHTML = "Tu progreso se guarda automáticamente.";
         mensaje.style.marginTop = "50px";
-
         pantalla.appendChild(mensaje);
+
+        const autor = document.createElement("div");
+        autor.className = "autor";
+        autor.innerHTML = `
+            Autor: Andrés Stegmaier<br>
+            Ingeniería Civil Industrial<br>
+            04-09-2026
+        `;
+        pantalla.appendChild(autor);
 
     }
 
